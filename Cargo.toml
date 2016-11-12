@@ -1,0 +1,8 @@
+[package]
+name = "home_event_client"
+version = "0.1.0"
+authors = ["Alex Bowen <ajbowen249@gmail.com>"]
+
+[dependencies]
+hyper = { version = "0.9.12", default-features = false }
+rustc-serialize = "0.3"
