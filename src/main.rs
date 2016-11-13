@@ -56,6 +56,7 @@ fn main() {
 fn process_event(event: &Event) {
     match event.eventType.as_ref() {
         "Message" => process_message_event(event),
+        "HueRelay" => process_hue_relay_event(event),
         _ => {}
     }
 }
@@ -63,6 +64,11 @@ fn process_event(event: &Event) {
 fn process_message_event(event: &Event) {
     let message_event: MessageEventBody = json::decode(&event.body).unwrap();
     println!("Got message event at {}: {}", event.time, message_event.message);
+}
+
+fn process_hue_relay_event(event: &Event) {
+    let hue_relay_event: HueRelayEventBody = json::decode(&event.body).unwrap();
+    put_request(&hue_relay_event.url, &hue_relay_event.content);
 }
 
 fn ping_event_server() -> bool {
@@ -116,6 +122,19 @@ fn post_request(address: &String, body: &String) -> (hyper::status::StatusCode, 
     return (result.status, response_body);
 }
 
+fn put_request(address: &String, body: &String) -> (hyper::status::StatusCode, String) {
+    let client = Client::new();
+    let mut result = client.put(address)
+                           .body(body)
+                           .send()
+                           .unwrap();
+    
+    let mut response_body = String::new();
+    let _ = result.read_to_string(&mut response_body);
+
+    return (result.status, response_body);
+}
+
 #[derive(RustcDecodable, RustcEncodable)]
 struct EventSeverRequest<T> {
     method: String,
@@ -151,4 +170,11 @@ struct SequenceNumberContainer {
 #[derive(RustcDecodable, RustcEncodable)]
 struct MessageEventBody {
     message: String
+}
+
+#[derive(RustcDecodable, RustcEncodable)]
+#[allow(non_snake_case)]
+struct HueRelayEventBody{
+    url: String,
+    content: String
 }
