@@ -24,7 +24,7 @@ fn main() {
         }
     }
 
-    let mut sequence_number: i64 = -1;
+    let mut sequence_number: i64;
 
     match get_highest_sequence_number(){
         Some(highest_num) => sequence_number = highest_num,
