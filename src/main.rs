@@ -1,6 +1,7 @@
 extern crate hyper;
 extern crate rustc_serialize;
 
+use std::io::prelude::*;    
 use std::sync::{Arc, Mutex};
 use std::{thread, time};
 use std::io;
@@ -74,10 +75,23 @@ fn main() {
         });
     }
 
-    println!("Press return to quit.");
+    loop {
+        print!(">");
+        io::stdout().flush().ok().expect("Could not flush stdout");
 
-    let mut entry = String::new();
-    io::stdin().read_line(&mut entry).expect("Console IO read error.");
+        let mut entry = String::new();
+        match io::stdin().read_line(&mut entry) {
+            Ok(_) => {
+                match entry.trim() {
+                    "q" | "quit" | "Q" | "QUIT" => {
+                        break;
+                    }
+                    _ => println!("Commands:\n    q: quit")
+                }
+            }
+            Err(_) => println!("Console IO Error")
+        }
+    }
 
     match quit.lock() {
         Ok(mut q) => {
