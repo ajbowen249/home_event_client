@@ -1,7 +1,9 @@
 extern crate hyper;
 extern crate rustc_serialize;
 
+use std::sync::{Arc, Mutex};
 use std::{thread, time};
+use std::io;
 
 mod data_structures;
 mod web_wrappers;
@@ -41,19 +43,53 @@ fn main() {
 
     println!("Observing events after sequence number {}", sequence_number);
 
-    loop{
-        match get_chunk_of_events(sequence_number){
-            Some(vec) =>{
-                for item in &vec {
-                    process_event(item);
+    let quit = Arc::new(Mutex::new(false));
+    let handle: thread::JoinHandle<_>;
+    
+    {
+        let quit = quit.clone();
+        handle = thread::spawn(move || {
+            loop{
+                match quit.lock() {
+                    Ok(q) => {
+                        if *q { return; }
+                    }
+                    Err(_) => println!("Quit flag read error.")
                 }
 
-                sequence_number = vec[vec.len() - 1].sequenceNumber;
+                match get_chunk_of_events(sequence_number){
+                    Some(vec) =>{
+                        for item in &vec {
+                            process_event(item);
+                        }
+        
+                        sequence_number = vec[vec.len() - 1].sequenceNumber;
+                    }
+                    _ => {}
+                }
+        
+                let poll_throttle = time::Duration::from_millis(POLL_THROTTLE_MS);
+                thread::sleep(poll_throttle);
             }
-            _ => {}
-        }
-
-        let poll_throttle = time::Duration::from_millis(POLL_THROTTLE_MS);
-        thread::sleep(poll_throttle);
+        });
     }
+
+    println!("Press return to quit.");
+
+    let mut entry = String::new();
+    io::stdin().read_line(&mut entry).expect("Console IO read error.");
+
+    match quit.lock() {
+        Ok(mut q) => {
+            *q = true;
+        }
+        Err(_) => println!("Quit flag access error.")
+    }
+
+     match handle.join(){
+         Ok(_) => {},
+         Err(_) => println!("Error cancelling client thread.")
+    }
+
+    println!("Successfully exited.");
 }
