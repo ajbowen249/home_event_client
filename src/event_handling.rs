@@ -14,7 +14,9 @@ pub fn process_event(event: &Event) {
 
 fn process_message_event(event: &Event) {
     let message_event: MessageEventBody = json::decode(&event.body).unwrap();
-    println!("Got message event at {}: {}", event.time, message_event.message);
+    println!("Got message event at {}: {}",
+             event.time,
+             message_event.message);
 }
 
 fn process_hue_relay_event(event: &Event) {
